@@ -1,0 +1,184 @@
+#!/usr/bin/env python
+import xdg
+import requests as req
+from configparser import ConfigParser, SectionProxy
+import os, sys, datetime
+import json
+from collections.abc import Collection
+
+def pp(obj, **kwargs):
+	try:
+		import pygments as pyg, pygments.formatters as pygfmt, pygments.lexers as pyglex
+		fmt_json = json.dumps(obj, sort_keys=True, )
+		print(pyg.highlight(
+				fmt_json,
+				pyglex.JsonLexer(),
+				pygfmt.TerminalFormatter()
+			).strip(),
+			**kwargs,
+		)
+	except ImportError:
+		print(obj, **kwargs)
+
+
+def send_request(
+		api_request: str,
+		headers: dict={},
+		data: dict={},
+		verbose=False
+	):
+	""" Helper function to handle actually sending requests for us """
+	BASE_API_URL = "https://api.cloudflare.com/client/v4/"
+	full_url = BASE_API_URL + api_request
+	if verbose: pp(full_url); pp(headers); pp(data)
+	http = req.get(
+		BASE_API_URL+api_request,
+		headers=headers,
+		data=data,
+	)
+	out = http.json()
+	if "result" in out.keys():
+		return out["result"]
+	else:
+		pp(out)
+		return out
+
+def get_dns_tables(
+		config: ConfigParser,
+		domain: str,
+		filter_fields: Collection=None,
+		filter_values: dict=None,
+		verbose: bool=False,
+	):
+	"""
+		Sends a request to CloudFlare to fetch all the DNS records for a domain (aka Zone).
+		X-Auth-Key, X-Auth-Email tokens from your account,
+		Authorization token from your Zone with View DNS Records permissions
+		is required.
+	"""
+	print("Getting DNS records")
+	request = "zones/" + config[domain].get("zone_id") + "/dns_records"
+	fields = "X-Auth-Key", "X-Auth-Email", "Authorization", "Content-Type"
+	table = send_request(
+		request,
+		get_headers(config, domain=domain, fields=fields),
+		verbose=verbose
+	)
+	filtered_table = []
+	for dns_rule in table:
+		if filter_values:
+			if not all( dns_rule.get(field) in filter_values[field] for field in filter_values.keys() ):
+				continue
+		if filter_fields:
+			dns_rule = { key: value for key, value in dns_rule.items() if key in filter_fields }
+		filtered_table.append(dns_rule)
+	return filtered_table
+
+
+def update_dns_record(
+		config: ConfigParser,
+		cached_record: SectionProxy,
+		verbose=False
+	):
+	"""
+		Sends a request to CloudFlare to update a given DNS record with values we have stored
+		in our cache.
+		X-Auth-Key, X-Auth-Email tokens from our account.
+		Authorization token from your Zone with Edit DNS Records permissons.
+		Type, name, content and ttl are required data fields by CloudFlare.
+		Expecting zone_name to exist so we can look up token in config file
+	"""
+	zone_id = cached_record["zone_id"]
+	print(f"Updating DNS record for {cached_record.name} in {zone_id}")
+	request = "zones/" + zone_id + "/dns_records/" + cached_record.name
+	fields = "X-Auth-Key", "X-Auth-Email", "Authorization", "Content-Type"
+	send_request(
+		request,
+		headers=get_headers(config, domain=cached_record["zone_name"], fields=fields),
+		data=dict(cached_record),
+		verbose=verbose
+	)
+
+def verify_token(config: ConfigParser, domain: str="all", verbose: bool=False):
+	print("Verifying token")
+	request = "user/tokens/verify"
+	fields = "Authorization", "Content-Type"
+	send_request( 
+		request,
+		get_headers(config, domain=domain, fields=fields),
+		verbose=verbose,
+	)
+
+def get_headers(
+		config: ConfigParser,
+		domain: str="all",
+		fields: Collection=None
+	):
+	general = config["general"]
+	all_fields = {
+		"Content-Type": "application/json",
+		"X-Auth-Key": general["global_api"],
+		"X-Auth-Email": general["email"],
+	}
+	if domain:
+		all_fields["Authorization"] = "Bearer " + config[domain].get("token", "")
+
+	if not fields:
+		return all_fields
+	return { header: value for header, value in all_fields.items() if header in fields }
+
+def validate_record(
+		record: SectionProxy,
+		cache: ConfigParser,
+	):
+	if not cache.has_section(record["id"]):
+		return None
+	for field, value in cache[record["id"]].items():
+		try:
+			value = int(value)
+		except:
+			pass
+		if not value == record[field]:
+			return False
+	return True
+
+def main(
+		config: ConfigParser,
+		cache: ConfigParser,
+		verbose: bool=False,
+		timings: bool=False,
+	):
+	if timings: print("Time is:", datetime.datetime.now())
+	# verify_token(config)
+	records = get_dns_tables(
+		config,
+		domain="mazunki.tech",
+		filter_fields=("zone_id", "zone_name", "name", "type", "content", "id", "ttl"),
+		filter_values = { "type": ( "A", "AAAA", "CAA" ) },
+		verbose=False,
+	)
+	if verbose: pp(records)
+	for record in records:
+		valid = validate_record(record, cache)
+		if valid == False: # ignores unstored values
+			if timings: print("Updating dns record:", datetime.datetime.now())
+			update_dns_record(
+				config=config,
+				cached_record=cache[record["id"]],
+				verbose=False,
+			)
+			continue
+	if timings: print("Done at:", datetime.datetime.now())
+
+
+
+if __name__ == "__main__":
+	config = ConfigParser()
+	config.read_file(open(os.path.join(xdg.XDG_DATA_HOME, "cloudflare/config")))
+	cache = ConfigParser()
+	cache.read_file(open(os.path.join(xdg.XDG_DATA_HOME, "cloudflare/ip_addresses")))
+	timings = "-t" in sys.argv
+	verbose = "-v" in sys.argv
+	main(config, cache, verbose=verbose, timings=timings)
+
+
