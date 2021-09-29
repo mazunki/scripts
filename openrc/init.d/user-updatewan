@@ -1,0 +1,33 @@
+#!/sbin/openrc-run
+
+command="$rc_bin_home/update_wan_cloudflare"
+command_args="$cf_record_id $ip_router_addr $ip_router_port $ip_router_idfile"
+command_user="$rc_username:$rc_usergroup"
+pidfile="/var/run/${RC_SVCNAME}.pid"
+command_background=true
+output_log="$rc_log_home/cloudflare.log"
+error_log="$rc_log_home/cloudflare.err"
+
+depends() {
+	need net
+}
+start_pre() {
+	export XDG_DATA_HOME=$rc_data_home
+	export XDG_BIN_HOME=$rc_bin_home
+	export XDG_LOG_HOME=$rc_log_home
+	export XDG_CONFIG_HOME=$rc_config_home
+	echo "Started at `date +'%F %T local time'`" > $output_log
+	[ -e "$output_log" ] && chown $command_user $output_log
+	[ -e "$output_log.old" ] && rm $output_log.old
+	touch $error_log
+	[ -e "$error_log" ] && chown $command_user $error_log
+	[ -e "$error_log.old" ] && rm $error_log.old
+	:
+}
+stop_post() {
+	echo "Stopped at `date +'%F %T'` local time" >> $output_log
+	[ -e "$output_log" ] && mv $output_log ${output_log}.old && chown $command_user $output_log.old
+	[ -e "$error_log" ] && mv $error_log ${error_log}.old && chown $command_user $error_log.old
+	:
+}
+

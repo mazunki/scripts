@@ -1,0 +1,8 @@
+#!/bin/sh
+# i've set up ~/.ssh/config to include access to ssh, and changed the port. avoid default port numbers
+# make sure you actually have ssh access to the router
+
+router_addr=${IP_ROUTER:-$(printrouter)}
+
+ssh $router_addr -p 1122 ip addr show eth0 | tail -n1 | awk '{ print $2 }' | sed "s:\([^/]*\)/\(.*\):\1:"
+

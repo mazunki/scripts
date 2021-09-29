@@ -1,0 +1,13 @@
+rc_username=mazunki
+rc_usergroup=mazunki
+rc_home=/home/mazunki
+rc_data_home=$rc_home/.local/share
+rc_bin_home=$rc_home/.local/bin
+rc_log_home=$rc_home/.local/logs
+rc_config_home=$rc_home/.config
+
+cf_record_id=
+ip_router_addr=
+ip_router_port=
+ip_router_idfile=
+

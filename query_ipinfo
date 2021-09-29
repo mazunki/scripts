@@ -1,0 +1,6 @@
+#!/bin/sh
+# needs jq to parse json output
+# alternatively you could use ipinfo.io/ip, but whatever. strips surrounding " with sed
+# -k because of HTTPS, -s because silent
+hostname="ipinfo.io"
+curl -k -s $hostname | jq '.["ip"]' | sed 's/"//g'

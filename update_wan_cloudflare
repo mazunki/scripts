@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# Gets IP address from router, replaces it in cached file, and runs
+# a Python script which asks CloudFlare to update IP addresses.
+# Repeat each 15 minutes
+#
+# Using absolute paths for binaries because OpenRC is kind of borked
+#
+cf_record_id="$1"
+ip_router_addr="$2"
+ip_router_port="$3"
+ip_router_idfile="$4"
+while true
+do
+	ip=$($XDG_BIN_HOME/printwan $ip_router_addr $ip_router_port $ip_router_idfile)
+	sed -i "/[$cf_record_id]/,/^$/s/content=.*/content=$ip/" $XDG_DATA_HOME/cloudflare/ip_addresses || exit 1;
+	/home/mazunki/.local/bin/cf -t || exit 2;
+	sleep 15m
+done
+
