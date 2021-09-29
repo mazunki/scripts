@@ -1,0 +1,37 @@
+#!/sbin/openrc-run
+
+command="/usr/bin/pipewire"
+command_args="-c /etc/pipewire/pipewire.conf"
+command_user="$RC_USERNAME:$RC_USERGROUP"
+pidfile="/var/run/${RC_SVCNAME}.pid"
+command_background=true
+output_log="$RC_LOG_HOME/pipewire.log"
+error_log="$RC_LOG_HOME/pipewire.err"
+
+depends() {
+	need user-dbus
+}
+
+start_pre() {
+	mkdir -p -m 0700 "/tmp/$RC_USERNAME-runtime"
+	chown $command_user "/tmp/$RC_USERNAME-runtime"
+
+	echo "Started at `date +'%F %T local time'`" > $output_log
+	[ -e "$output_log" ] && chown $command_user $output_log
+	[ -e "$output_log.old" ] && rm $output_log.old
+	touch $error_log
+	[ -e "$error_log" ] && chown $command_user $error_log
+	[ -e "$error_log.old" ] && rm $error_log.old
+
+	export XDG_DATA_HOME=$rc_data_home
+	export XDG_CONFIG_HOME=$rc_config_home
+	export XDG_BIN_HOME=$rc_bin_home
+	export XDG_RUNTIME_DIR="/tmp/$RC_USERNAME-runtime"
+	:
+}
+stop_post() {
+	echo "Stopped at `date +'%F %T'` local time" >> $output_log
+	[ -e "$output_log" ] && mv $output_log ${output_log}.old && chown $command_user $output_log.old
+	[ -e "$error_log" ] && mv $error_log ${error_log}.old && chown $command_user $error_log.old
+	rm -rf /tmp/mazunki-runtime/pulse
+}

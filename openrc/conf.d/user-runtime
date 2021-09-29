@@ -6,8 +6,3 @@ RC_BIN_HOME=$RC_HOME/.local/bin
 RC_LOG_HOME=$RC_HOME/.local/logs
 RC_CONFIG_HOME=$RC_HOME/.config
 
-cf_record_id=
-ip_router_addr=
-ip_router_port=
-ip_router_idfile=
-

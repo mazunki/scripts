@@ -1,0 +1,38 @@
+#!/sbin/openrc-run
+
+command="dbus-daemon"
+command_args="--session --address=unix:path=/tmp/$RC_USERNAME-runtime/bus"
+command_user="$RC_USERNAME:$RC_USERGROUP"
+pidfile="/var/run/${RC_SVCNAME}.pid"
+command_background=true
+output_log="$RC_LOG_HOME/dbus.log"
+error_log="$RC_LOG_HOME/dbus.err"
+
+depends() {
+	need user-runtime
+}
+
+start_pre() {
+	mkdir -p -m 0700 "/tmp/$RC_USERNAME-runtime"
+	chown $command_user "/tmp/$RC_USERNAME-runtime"
+
+	echo "Started at `date +'%F %T local time'`" > $output_log
+	[ -e "$output_log" ] && chown $command_user $output_log
+	[ -e "$output_log.old" ] && rm $output_log.old
+	touch $error_log
+	[ -e "$error_log" ] && chown $command_user $error_log
+	[ -e "$error_log.old" ] && rm $error_log.old
+
+	export XDG_DATA_HOME=$rc_data_home
+	export XDG_BIN_HOME=$rc_bin_home
+	export XDG_RUNTIME_DIR="/tmp/$RC_USERNAME-runtime"
+	:
+}
+stop_post() {
+	echo "Stopped at `date +'%F %T'` local time" >> $output_log
+	[ -e "$output_log" ] && mv $output_log ${output_log}.old && chown $command_user $output_log.old
+	[ -e "$error_log" ] && mv $error_log ${error_log}.old && chown $command_user $error_log.old
+	# should we handle dbus ourselves??
+	:
+}
+

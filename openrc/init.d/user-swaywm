@@ -1,0 +1,54 @@
+#!/sbin/openrc-run
+
+command="sway"
+command_args=""
+command_user="mazunki:mazunki"
+pidfile="/var/run/${RC_SVCNAME}.pid"
+command_background=true
+output_log="/home/mazunki/.local/logs/swaywm.log"
+error_log="/home/mazunki/.local/logs/swaywm.err"
+
+depends() {
+	need user-dbus
+	need pipewire
+}
+
+stop_post() {
+	[ -e "$output_log" ] && mv ${output_log} ${output_log}.old
+	[ -e "$error_log" ] && mv ${error_log} ${error_log}.old
+	return 0
+}
+start_pre() {
+	install -o mazunki -g mazunki /dev/null $output_log
+	export XDG_RUNTIME_DIR="/tmp/mazunki-runtime"
+	export XDG_SESSION_TYPE="wayland"
+	export XDG_SESSION_DESKTOP="sway"
+	export XDG_CURRENT_DESTKOP="sway"
+	export DESKTOP_SESSION="sway"
+
+	export XKB_DEFAULT_LAYOUT=us
+
+	export LIBSEAT_BACKEND="logind"
+
+	export QT_WAYLAND_DISABLE_WINDOW_DECORATION=1
+	export QT_QPA_PLATFORM="wayland-egl"
+
+	export GDK_BACKEND="wayland,x11"
+	export GTK_BACKEND="wayland"
+
+	export MOZ_ENABLE_WAYLAND=1
+	export CLUTTER_BACKEND="wayland"
+	export SDL_VIDEODRIVER="wayland"
+
+	export VK_ICD_FILENAMES=/opt/amdgpu/etc/vulkan/icd.d/amd_icd64.json
+
+	export WLR_DRM_DEVICES=/dev/dri/card0
+
+	WAYLAND_DEBUG=1
+
+	export WAYLAND_DISPLAY=":0"
+	export DISPLAY=":1"
+	dbus-update-activation-environment --all
+#	env
+}
+
