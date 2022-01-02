@@ -1,0 +1,6 @@
+#!/bin/sh
+if [ "$1" = '-v' -o "$1" == '--verbose' ]; then
+	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.pid and .focused) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"'
+else
+	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.pid and .focused) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height)"'
+fi
