@@ -14,6 +14,9 @@
 # - Compatible with sway, or any other compositor which provides a swaymsg interface
 # - jq, a JSON parser
 # 
+# Consider the following for your sway bindings
+#	bindsym $mod+o exec grim -g "$(wl-select-active)" - | wl-copy
+# 
 
 if [ "$1" = '-v' -o "$1" == '--verbose' ]; then
 	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.pid and .focused) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"'

@@ -16,6 +16,9 @@
 # - If not using --wofi:
 #   - slurp
 # 
+# Consider the following for your sway bindings
+#	bindsym $mod+Shift+p exec grim -g "$(wl-select)" - | wl-copy
+# 
 
 if [ "$1" = '-w' -o "$1" == '--wofi' ]; then
 	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.pid and .visible) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"' | wofi --show dmenu --pre-display-cmd 'echo "%s" | cut -d" " -f3-' | awk '{print $1,$2}'
