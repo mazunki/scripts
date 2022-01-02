@@ -1,4 +1,20 @@
 #!/bin/sh
+# 
+# Do you just want to know the coordinates of the window you're working on?
+# Perhaps so you can take a screenshot... or know its size?
+# 
+# Usage:
+#	wl-select-active [--verbose]
+# If you add the verbose option, you'll also see the name of the application as the third column
+# If you only want the name, consider `wl-select-active --verbose | cut -d' ' -f3-`
+#	TODO: Maybe add this as a `--only-name` option?
+# 
+# 
+# Dependencies:
+# - Compatible with sway, or any other compositor which provides a swaymsg interface
+# - jq, a JSON parser
+# 
+
 if [ "$1" = '-v' -o "$1" == '--verbose' ]; then
 	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.pid and .focused) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"'
 else
