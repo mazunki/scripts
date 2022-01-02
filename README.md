@@ -8,7 +8,7 @@ This repository is set up under `~/.local/bin` on my system, and this directory 
 git clone git@github.com:mazunki/scripts.git ~/.local/bin
 
 # and add the following line to your ~/.config/${shell}/configrc
-export PATH="${HOME/.local/bin}:${PATH}"'
+export PATH="${HOME}/.local/bin:${PATH}"'
 ```
 It's quite handy.
 
