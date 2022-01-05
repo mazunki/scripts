@@ -40,8 +40,8 @@ paths() {
 }
 move_directory() {
 	should_move_directory=1
-	[ -d $OLDHOME/.runelite ] && [ ! -d $FAKEHOME/.runelite ] && should_move_directory=1 || return 0
-	[ "$should_move_directory" -eq "1" ] && mv $OLDHOME/.runelite $HOME/ && return 0
+	[ -d $REALHOME/.runelite ] && [ ! -d $FAKEHOME/.runelite ] && should_move_directory=1 || return 0
+	[ "$should_move_directory" -eq "1" ] && echo "Moving '$REALHOME/.runelite' to '$FAKEHOME/.runelite'" && mv --target-directory=$FAKEHOME -- $REALHOME/.runelite && return 0
 
 }
 main() {
