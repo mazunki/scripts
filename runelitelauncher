@@ -4,54 +4,101 @@ REALHOME=$HOME
 FAKEHOME=$HOME/.local/fakehomes # Replace this with where you want it to be
 RUNELITE_EXEC=~/.local/gits/runelite/launcher.git/target/RuneLite.jar
 
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$REALHOME/.cache}
+XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$REALHOME/.config}
+XDG_DATA_HOME=${XDG_DATA_HOME:-$REALHOME/.local/share}
+XDG_STATE_HOME=${XDG_STATE_HOME:-$REALHOME/.local/state}
+
+XDG_PICTURES_DIR=${XDG_PICTURES_DIR:-$REALHOME/Pictures}
+
 # Adds symlinks for actual paths in fakehome
-remember() {
-	# Replace OLDHOME with HOME in the link name
-	fake_dir=$(echo $1 | sed "s:^$REALHOME:$FAKEHOME:")
-	echo -en "Relinking '$1' to '$fake_dir'... "
-
-	# Creates the link's parent directory and symlinks it
-	mkdir -p $(dirname $fake_dir) || echo "Failed to create parent dirs"
-	ln -s "$1" -t "$(dirname ${fake_dir})" 2> /dev/null
-	ret=$?
-	[ "$ret" -eq "0" -o "$ret" -eq "1" ] && return 0 || return 1
-}
-forget() {
-	fake_dir=$(echo $1 | sed "s:^$REALHOME:$FAKEHOME:" | sed 's:^\(.*\)/$:\1:')
-	echo -en "Unlinking '$fake_dir'... "
-	unlink "$fake_dir" 2> /dev/null
-	ret=$?
-	[ "$ret" -eq "0" -o "$ret" -eq "1" ] && return 0 || return 1
-}
-
-try() {
-	$@
-	ret=$?
-	[ "$ret" -eq "0" ] && echo "Ok" || echo "Failed" 
-	[ "$ret" -eq "0" ] || export error=1
-}
-
-mkdir -p $FAKEHOME
-paths() {
-	try $1 ${XDG_DATA_HOME:-$HOME/.local/share}
-	try $1 ${XDG_CACHE_HOME:-$HOME/.cache}
-	try $1 ${XDG_CONFIG_HOME:-$HOME/.config}
-	try $1 ${REALHOME}/.icons # ~/.icons (lxappearance's mouse cursor theme)
-}
 move_directory() {
-	should_move_directory=1
-	[ -d $REALHOME/.runelite ] && [ ! -d $FAKEHOME/.runelite ] && should_move_directory=1 || return 0
-	[ "$should_move_directory" -eq "1" ] && echo "Moving '$REALHOME/.runelite' to '$FAKEHOME/.runelite'" && mv --target-directory=$FAKEHOME -- $REALHOME/.runelite && return 0
+	if [ -d ${REALHOME}/.runelite ]; then
+		if [ -e ${FAKEHOME}/.runelite ]; then
+			echo "There is already a RuneLite directory in the fakehome"
+			return 1
+		fi
 
+	## Taking a backup in case anything breaks
+		cp -r ${REALHOME}/.runelite ${REALHOME}/runescape.bak
+
+	## The thing itself
+		echo "Moving '$REALHOME/.runelite/' to '$FAKEHOME/.runelite/'"
+		mv --target-directory=$FAKEHOME -- $REALHOME/.runelite || return 1
+
+	## Cache and stuff
+		echo "Moving '.runelite/cache/' to '${XDG_CACHE_HOME}/runelite/runelite/'"
+		[ -d "${FAKEHOME}/.runelite/cache" ] && [ ! -e "${XDG_CACHE_HOME}/runelite/runelite" ] &&  mv -T -- $FAKEHOME/.runelite/cache ${XDG_CACHE_HOME}/runelite
+		mkdir -p -- ${XDG_CACHE_HOME}/runelite/runelite
+		ln -sT ${XDG_CACHE_HOME}/runelite ${FAKEHOME}/.runelite/cache
+
+		echo "Moving '.runelite/jagexcache/' to '${XDG_CACHE_HOME}/runelite/runescape/'"
+		mkdir -p -- ${XDG_CACHE_HOME}/runelite
+		[ -d "${FAKEHOME}/.runelite/jagexcache" ] && [ ! -e "${XDG_CACHE_HOME}/runelite/runescape" ] && mv -T -- ${FAKEHOME}/.runelite/jagexcache ${XDG_CACHE_HOME}/runelite/runescape
+		mkdir -p -- ${XDG_CACHE_HOME}/runelite/runescape
+		ln -sT ${XDG_CACHE_HOME}/runelite/runescape ${FAKEHOME}/.runelite/jagexcache
+
+	## Screenshots
+		echo "Moving '.runelite/screenshots/' to '${XDG_PICTURES_DIR}/runescape/'"
+		[ -d "${FAKEHOME}/.runelite/screenshots" ] && [ ! -e "${XDG_PICTURES_DIR}/runelite" ] && mv -T -- ${FAKEHOME}/.runelite/screenshots ${XDG_PICTURES_DIR}/runelite 
+		mkdir -p -- ${XDG_PICTURES_DIR}/runelite
+		ln -sT ${XDG_PICTURES_DIR}/runelite ${FAKEHOME}/.runelite/screenshots
+
+	## Plugins and stuff
+		echo "Moving '.runelite/repository2/' to '${XDG_DATA_HOME}/runelite/repository2/'"
+		mkdir -p -- ${XDG_DATA_HOME}/runelite
+		[ -d "${FAKEHOME}/.runelite/repository2" ] && [ ! -e "${XDG_DATA_HOME}/runelite/repository2" ] && mv -T -- ${FAKEHOME}/.runelite/repository2 ${XDG_DATA_HOME}/runelite/repository2
+		mkdir -p -- ${XDG_DATA_HOME}/runelite/repository2
+		ln -sT ${XDG_DATA_HOME}/runelite/repository2 ${FAKEHOME}/.runelite/repository2
+
+		echo "Moving '.runelite/plugins/' to '${XDG_DATA_HOME}/runelite/plugins/'"
+		mkdir -p ${XDG_DATA_HOME}/runelite
+		[ -d "${FAKEHOME}/.runelite/plugins" ] && [ ! -e "${XDG_DATA_HOME}/runelite/plugins" ] && mv -T -- ${FAKEHOME}/.runelite/plugins ${XDG_DATA_HOME}/runelite/plugins
+		mkdir -p -- ${XDG_DATA_HOME}/runelite/plugins
+		ln -sT ${XDG_DATA_HOME}/runelite/plugins ${FAKEHOME}/.runelite/plugins
+
+	## Settings and stuff
+		echo "Moving '.runelite/settings.properties' to '${XDG_CONFIG_HOME}/runelite/settings.properties'"
+		mkdir -p -- ${XDG_CONFIG_HOME}/runelite
+		[ -f "${FAKEHOME}/.runelite/settings.properties" ] && mv -T -- ${FAKEHOME}/.runelite/settings.properties ${XDG_CONFIG_HOME}/runelite/settings.properties 
+		touch ${XDG_CONFIG_HOME}/runelite/settings.properties
+		ln -sT ${XDG_CONFIG_HOME}/runelite/settings.properties ${FAKEHOME}/.runelite/settings.properties
+
+	else
+		if [ -e ${FAKEHOME}/.runelite ]; then
+			echo -e "There is already a RuneLite directory in the fakehome, and none in home directory. \nIf this is a problem, remove the fakehome directory, and run again."
+			return 0
+		else
+			echo "Creating a clean RuneLite in the fakehome"
+			mkdir -p ${FAKEHOME}/.runelite
+
+			mkdir -p ${XDG_CACHE_HOME}/runelite/runelite
+			mkdir -p ${XDG_CACHE_HOME}/runelite/runescape
+			ln -sT ${XDG_CACHE_HOME}/runelite/runelite ${FAKEHOME}/.runelite/cache || return 11
+			ln -sT ${XDG_CACHE_HOME}/runelite/runescape ${FAKEHOME}/.runelite/jagexcache || return 12
+
+			mkdir -p ${XDG_CONFIG_HOME}/runelite
+			touch ${XDG_CONFIG_HOME}/runelite/settings.properties
+			ln -sT ${XDG_CONFIG_HOME}/runelite/settings.properties ${FAKEHOME}/.runelite/settings.properties || return 16
+			# note that java likes to override this file if it's empty/invalid, so maybe we should re-run this command if it's not a link on each execution :)
+
+			mkdir -p ${XDG_DATA_HOME}/runelite/repository2
+			mkdir -p ${XDG_DATA_HOME}/runelite/plugins
+			ln -sT ${XDG_DATA_HOME}/runelite/repository2 ${FAKEHOME}/.runelite/repository2 || return 14
+			ln -sT ${XDG_DATA_HOME}/runelite/plugins ${FAKEHOME}/.runelite/plugins || return 15
+
+			mkdir -p ${XDG_PICTURES_DIR}/runelite
+			ln -sT ${XDG_PICTURES_DIR}/runelite ${FAKEHOME}/.runelite/screenshots || return 13
+		fi
+	fi
 }
 main() {
 	export HOME=${FAKEHOME}
+	export _JAVA_OPTIONS=-Duser.home=${FAKEHOME}
 
-	error=0
-	paths remember || error=1
-	move_directory || error=1
+	move_directory 
 
-	[ "$error" = "0" ] && java -jar $RUNELITE_EXEC "$@" || echo "Failed to fakehome runelite"
+	[ "$?" = "0" ] && java -jar -Duser.home=${FAKEHOME} $RUNELITE_EXEC "$@" || echo "Failed to fakehome runelite: "$?""
 }
 
 main
