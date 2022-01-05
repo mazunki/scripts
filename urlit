@@ -1,0 +1,20 @@
+#!/bin/sh
+baseurl='ix.io'
+user="mazunki"
+password="verysecurepassword"
+creds="-u $user:$password"
+
+while getopts "l:" o; do
+	case "${o}" in
+		l)
+			lang="-F ext:1=$OPTARG"
+			;;
+	esac
+done
+#shift $((OPTIND-1))
+echo "lang: '$lang'"
+set -e
+pasteurl=$(curl -Ss ${creds} ${lang} -F 'f:1=<-' "${baseurl}")
+
+echo "$pasteurl/"
+wl-copy "${pasteurl}/"
