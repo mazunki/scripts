@@ -8,6 +8,7 @@ XDG_CACHE_HOME=${XDG_CACHE_HOME:-$REALHOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$REALHOME/.config}
 XDG_DATA_HOME=${XDG_DATA_HOME:-$REALHOME/.local/share}
 XDG_STATE_HOME=${XDG_STATE_HOME:-$REALHOME/.local/state}
+XDG_LOG_HOME=${XDG_LOG_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}}
 
 XDG_PICTURES_DIR=${XDG_PICTURES_DIR:-$REALHOME/Pictures}
 
@@ -44,6 +45,13 @@ move_directory() {
 		mkdir -p -- ${XDG_CACHE_HOME}/runelite/runescape
 		[ -e "${FAKEHOME}/.runelite/jagexcache" ] && we_deleted_something=1 && rm -r -- ${FAKEHOME}/.runelite/jagexcache
 		ln -sT ${XDG_CACHE_HOME}/runelite/runescape ${FAKEHOME}/.runelite/jagexcache
+	
+	# Logs
+		echo "Moving '.runelite/logs/' to '${XDG_LOG_HOME}/runelite/'"
+		[ -d "${FAKEHOME}/.runelite/logs" ] && [ ! -e "${XDG_LOG_HOME}/runelite" ] &&  mv -T -- $FAKEHOME/.runelite/logs ${XDG_LOG_HOME}/runelite
+		mkdir -p -- ${XDG_LOG_HOME}/runelite
+		[ -e "${FAKEHOME}/.runelite/logs" ] && we_deleted_something=1 && rm -r -- ${FAKEHOME}/.runelite/logs
+		ln -sT ${XDG_LOG_HOME}/runelite ${FAKEHOME}/.runelite/logs
 
 	## Screenshots
 		echo "Moving '.runelite/screenshots/' to '${XDG_PICTURES_DIR}/runescape/'"
@@ -69,6 +77,7 @@ move_directory() {
 
 		echo "Moving '.runelite/icon.png' to '${XDG_DATA_HOME}/runelite/icon.png'"
 		[ -e "${FAKEHOME}/.runelite/icon.png" ] && [ ! -e "${XDG_DATA_HOME}/runelite/icon.png" ] && mv -T -- ${FAKEHOME}/.runelite/icon.png ${XDG_DATA_HOME}/runelite/icon.png
+		[ -e "${FAKEHOME}/.runelite/icon.png" ] && we_deleted_something=1 && rm -r -- ${FAKEHOME}/.runelite/icon.png
 		ln -sT ${XDG_DATA_HOME}/runelite/icon.png ${FAKEHOME}/.runelite/icon.png
 
 	## Settings and stuff
@@ -98,6 +107,9 @@ move_directory() {
 			touch ${XDG_CONFIG_HOME}/runelite/settings.properties
 			ln -sT ${XDG_CONFIG_HOME}/runelite/settings.properties ${FAKEHOME}/.runelite/settings.properties || return 16
 			# note that java likes to override this file if it's empty/invalid, so maybe we should re-run this command if it's not a link on each execution :)
+
+			mkdir -p ${XDG_LOG_HOME}/runelite
+			ln -sT ${XDG_LOG_HOME}/runelite ${FAKEHOME}/.runelite/logs || return 17
 
 			mkdir -p ${XDG_DATA_HOME}/runelite/repository2
 			mkdir -p ${XDG_DATA_HOME}/runelite/plugins
