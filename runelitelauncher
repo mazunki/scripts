@@ -67,6 +67,10 @@ move_directory() {
 		[ -e "${FAKEHOME}/.runelite/plugins" ] && we_deleted_something=1 && rm -r -- ${FAKEHOME}/.runelite/plugins
 		ln -sT ${XDG_DATA_HOME}/runelite/plugins ${FAKEHOME}/.runelite/plugins
 
+		echo "Moving '.runelite/icon.png' to '${XDG_DATA_HOME}/runelite/icon.png'"
+		[ -e "${FAKEHOME}/.runelite/icon.png" ] && [ ! -e "${XDG_DATA_HOME}/runelite/icon.png" ] && mv -T -- ${FAKEHOME}/.runelite/icon.png ${XDG_DATA_HOME}/runelite/icon.png
+		ln -sT ${XDG_DATA_HOME}/runelite/icon.png ${FAKEHOME}/.runelite/icon.png
+
 	## Settings and stuff
 		echo "Moving '.runelite/settings.properties' to '${XDG_CONFIG_HOME}/runelite/settings.properties'"
 		mkdir -p -- ${XDG_CONFIG_HOME}/runelite
