@@ -37,7 +37,7 @@ move_directory() {
 		[ -d "${FAKEHOME}/.runelite/cache" ] && [ ! -e "${XDG_CACHE_HOME}/runelite/runelite" ] &&  mv -T -- $FAKEHOME/.runelite/cache ${XDG_CACHE_HOME}/runelite/runelite
 		mkdir -p -- ${XDG_CACHE_HOME}/runelite/runelite
 		[ -e "${FAKEHOME}/.runelite/cache" ] && we_deleted_something=1 && rm -r -- ${FAKEHOME}/.runelite/cache
-		ln -sT ${XDG_CACHE_HOME}/runelite ${FAKEHOME}/.runelite/cache
+		ln -sT ${XDG_CACHE_HOME}/runelite/runelite ${FAKEHOME}/.runelite/cache
 
 		echo "Moving '.runelite/jagexcache/' to '${XDG_CACHE_HOME}/runelite/runescape/'"
 		mkdir -p -- ${XDG_CACHE_HOME}/runelite
