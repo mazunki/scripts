@@ -1,0 +1,8 @@
+#!/bin/sh
+export X=$(echo $1 | awk -F',' '{print $1}')
+export Y=$(echo $1 | awk -F',' '{print $2}')
+export W=$(echo $2 | awk -F'x' '{print $1}')
+export H=$(echo $2 | awk -F'x' '{print $2}')
+
+swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.rect.x == '$X' and .rect.y == '$Y' and .rect.width == '$W' and .rect.height == '$H')'
+
