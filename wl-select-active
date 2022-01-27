@@ -18,8 +18,10 @@
 #	bindsym $mod+o exec grim -g "$(wl-select-active)" - | wl-copy
 # 
 
-if [ "$1" = '-v' -o "$1" == '--verbose' ]; then
-	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.pid and .focused) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"'
+export SWAYSOCK=${SWAYSOCK:-$(/bin/ls "${XDG_RUNTIME_DIR}"/sway-ipc*)}
+
+if [ "$1" = '-v' ] || [ "$1" = '--verbose' ]; then
+	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] * (.floating_nodes? // empty)[] | select(.pid and .focused) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"'
 else
-	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.pid and .focused) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height)"'
+	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] * (.floating_nodes? // empty)[] | select(.pid and .focused) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height)"'
 fi

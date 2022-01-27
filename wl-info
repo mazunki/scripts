@@ -1,8 +1,45 @@
 #!/bin/sh
-export X=$(echo $1 | awk -F',' '{print $1}')
-export Y=$(echo $1 | awk -F',' '{print $2}')
-export W=$(echo $2 | awk -F'x' '{print $1}')
-export H=$(echo $2 | awk -F'x' '{print $2}')
+# 
+# Do you ever want to just read the info of a window in Wayland?
+# Use this tool to dump the json output of any window!
+# 
+# 
+# Usage:
+#	wl-info position shape
+#		position = "123,456"
+#		shape = "123x456"
+#
+#	wl-info identifier
+#		identifier = name | app_id
+#
+#	wl-info
+#		allows you to select the shape
+#
 
-swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.rect.x == '$X' and .rect.y == '$Y' and .rect.width == '$W' and .rect.height == '$H')'
+# Dependencies:
+# - Compatible with sway, or any other compositor which provides a swaymsg interface
+# - jq, a JSON parser
+# - wl-select, if using --select
+#
+# 
+export SWAYSOCK=${SWAYSOCK:-$(/bin/ls "${XDG_RUNTIME_DIR}"/sway-ipc*)}
 
+if [ "$#" = "0" ]; then
+	set -- $(wl-select)
+fi
+
+if [ "$#" = "1" ]; then
+	swaymsg -t get_tree | \
+		jq --arg identifier "$1" \
+		-r '.. | (.nodes? // empty)[] * (.floating_nodes? // empty)[] | select(.name == $identifier OR .app_id == $identifier)'
+
+elif [ "$#" = "2" ]; then
+	X=$(echo "$1" | awk -F',' '{print $1}')
+	Y=$(echo "$1" | awk -F',' '{print $2}')
+	W=$(echo "$2" | awk -F'x' '{print $1}')
+	H=$(echo "$2" | awk -F'x' '{print $2}')
+	swaymsg -t get_tree | \
+		jq --argjson posx "$X" --argjson posy "$Y" --argjson width "$W" --argjson height "$H" \
+		-r '.. | (.nodes? // empty)[] * (.floating_nodes? // empty)[] | select(.rect.x == $posx and .rect.y == $posy and .rect.width == $width and .rect.height == $height)'
+
+fi
