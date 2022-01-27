@@ -31,15 +31,17 @@ fi
 if [ "$#" = "1" ]; then
 	swaymsg -t get_tree | \
 		jq --arg identifier "$1" \
-		-r '.. | (.nodes? // empty)[] * (.floating_nodes? // empty)[] | select(.name == $identifier OR .app_id == $identifier)'
+		-r 'recurse(.nodes[], .floating_nodes[]) | select(.name == $identifier OR .app_id == $identifier)'
 
 elif [ "$#" = "2" ]; then
 	X=$(echo "$1" | awk -F',' '{print $1}')
 	Y=$(echo "$1" | awk -F',' '{print $2}')
 	W=$(echo "$2" | awk -F'x' '{print $1}')
 	H=$(echo "$2" | awk -F'x' '{print $2}')
+	# echo "$X,$Y $W $H"
+
 	swaymsg -t get_tree | \
 		jq --argjson posx "$X" --argjson posy "$Y" --argjson width "$W" --argjson height "$H" \
-		-r '.. | (.nodes? // empty)[] * (.floating_nodes? // empty)[] | select(.rect.x == $posx and .rect.y == $posy and .rect.width == $width and .rect.height == $height)'
+		-r 'recurse(.nodes[], .floating_nodes[]) | select(.rect.x == $posx and .rect.y == $posy and .rect.width == $width and .rect.height == $height)'
 
 fi

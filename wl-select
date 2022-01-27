@@ -23,9 +23,17 @@
 export SWAYSOCK=${SWAYSOCK:-$(/bin/ls ${XDG_RUNTIME_DIR}/sway-ipc*)}
 
 if [ "$1" = '-w' -o "$1" == '--wofi' ]; then
-	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] * (.floating_nodes? // empty)[] | select(.pid and .visible) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"' | wofi --show dmenu --pre-display-cmd 'echo "%s" | cut -d" " -f3-' | awk '{print $1,$2}'
+	swaymsg -t get_tree | \
+		jq -r 'recurse(.nodes[], .floating_nodes[]) | select(.pid and .visible) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"' | \
+		wofi \
+		--show dmenu \
+		--pre-display-cmd 'echo "%s" | cut -d" " -f3-' | \
+		awk '{print $1,$2}'
+
 else
 	# Uses slurp to spit out the region of the clicked-upon window
-	swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] * (.floating_nodes? // empty)[] | select(.pid and .visible) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"' | slurp -or
+	swaymsg -t get_tree | \
+		jq -r 'recurse(.nodes[], .floating_nodes[]) | select(.pid and .visible) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"' | \
+		slurp -or
 fi
 
