@@ -39,7 +39,7 @@ awk \
 	'BEGIN {found=0; buf=""}
 	/'"$QUERY"'/ { found=1; }
 	/'"$START"'/ { if (!found) { buf="" }; }
+	/'"$END"'/ { if (found) { found=0; print buf $0; buf=""; }; }
 	{ buf = buf $0 ORS; }
-	/'"$END"'/ { if (found) { found=0; print buf; buf=""}; }
 ' "${1:-/dev/stdin}"
 
