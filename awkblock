@@ -1,6 +1,6 @@
 #!/bin/sh
 # 
-# Ever wanted to use awk to grep for a block, conditionally on the content of theb lock?
+# Ever wanted to use awk to grep for a block conditionally, based on the content inside of it? Here you go! :)
 # 
 # Will print all matches
 #
