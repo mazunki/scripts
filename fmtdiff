@@ -74,8 +74,8 @@ wrapper() {
 		--unchanged-line-format="" \
 		--old-line-format="${OLD}%dn${RESET}: %L" \
 		--new-line-format="${NEW}%dn${RESET}: %L" \
-		--from-file <( sed "s/$IGNORE//g" "${FROM}/$1" )\
-		<( sed "s/$IGNORE//g" "${TO}/$1" )
+		--from-file <( grep -v "${IGNORE}" "${FROM}/$1" )\
+		<( grep -v "${IGNORE}" "${TO}/$1" )
 
 	echo "${INFO}<<< DONE${RESET}"
 	echo ""
