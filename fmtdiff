@@ -3,13 +3,19 @@ OLD=$'\033[38;5;124m'
 NEW=$'\033[38;5;40m'
 RESET=$'\033[0m'
 
-OPTARGS=$(getopt --options f:t: --longoptions from:to: -- "$@")
+OPTARGS=$(getopt --options f:t:I:ibw --longoptions from:to:ignore: -- "$@")
+
+OPTS=""
 
 eval set -- "$OPTARGS"
 while :
 	do case "$1" in
 		-f | --from) FROM="$2" ; shift 2 ;;
 		-t | --to) TO="$2" ; shift 2 ;;
+		-I | --ignore) IGNORE="$2" ; shift 2 ;;
+		-i ) OPTS="${OPTS} --ignore-case" ; shift ;;
+		-b ) OPTS="${OPTS} --ignore-space-change" ; shift ;;
+		-w ) OPTS="${OPTS} --ignore-all-space" ; shift ;;
 		--) shift; break ;;
 		*) echo "Wrong option passed: $1" ;;
 	esac
@@ -19,15 +25,18 @@ done
 [ -z "$FROM" ] && [ "$TO" = "/etc" ] && FROM="/usr/share"
 [ -z "$TO" ] && [ "$FROM" = "/usr/share" ] && TO="/etc"
 
+[ -z "$IGNORE" ] && IGNORE="^$"
 
 echo "Original file: ${OLD}${FROM}/$1${RESET}"
 echo "Current file: ${NEW}${TO}/$1${RESET}"
 echo ""
 
 diff \
+	${OPTS} \
 	--unchanged-line-format="" \
 	--old-line-format="${OLD}%dn${RESET}: %L" \
 	--new-line-format="${NEW}%dn${RESET}: %L" \
 	--from-file "${FROM}/$1" \
+	--ignore-matching-lines "${IGNORE}" \
 	"${TO}/$1"
 
