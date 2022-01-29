@@ -48,7 +48,7 @@ wrapper() {
 }
 
 if [ "$RECURSIVE" = "1" ]; then
-	find "${FROM}/$1" | \
+	find "${FROM}/$1" -type f | \
 		while read -r origfilename; do
 			filename=$(echo "${origfilename}" | sed "s:^${FROM}/::")
 			wrapper "$filename"
