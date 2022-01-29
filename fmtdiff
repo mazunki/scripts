@@ -25,9 +25,9 @@ echo "Current file: ${NEW}${TO}/$1${RESET}"
 echo ""
 
 diff \
-		 --unchanged-line-format="" \
-		 --old-line-format="${OLD}%dn:${RESET} %L" \
-		 --new-line-format="${NEW}%dn:${RESET}: %L" \
-		 --from-file "${FROM}/$1" \
-		 "${TO}/$1"
-		 
+	--unchanged-line-format="" \
+	--old-line-format="${OLD}%dn:${RESET} %L" \
+	--new-line-format="${NEW}%dn:${RESET}: %L" \
+	--from-file "${FROM}/$1" \
+	"${TO}/$1"
+
