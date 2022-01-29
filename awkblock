@@ -1,0 +1,45 @@
+#!/bin/sh
+# 
+# Ever wanted to use awk to grep for a block, conditionally on the content of theb lock?
+# 
+# Will print all matches
+#
+# Usage:
+#	awkblock start-pattern end-pattern query filename
+#		If no filename is provided, stdin is used
+#
+#	awkblock query filename
+#		If no filename is provided, stdin is used
+#		Uses blank lines as the block pattern
+#
+# Dependencies:
+#	- awk
+# 
+# Example:
+#	awkblock "{" "}" "factory.name" /etc/pipewire/pipewire.conf
+#	awkblock "factory.name" /etc/pipewire/pipewire.conf
+# 
+
+
+if [ "$#" = "4" ] || [ "$#" = "3" ] ; then
+	START="$1"
+	END="$2"
+	QUERY="$3"
+	shift 3
+elif [ "$#" = "2" ] || [ "$#" = "1" ] ; then
+	START="^$"
+	END="^$"
+	QUERY="$1"
+	shift 1
+else
+	echo "Read the usage of the file."
+fi
+
+awk \
+	'BEGIN {line=0; start=0; found=0; buf=""}
+	/'"$QUERY"'/ { found=1; }
+	/'"$START"'/ { if (!found) { buf="" }; }
+	{ buf = buf $0 ORS; }
+	/'"$END"'/ { if (found) { found=0; print buf; buf=""}; }
+' "${1:-/dev/stdin}"
+
