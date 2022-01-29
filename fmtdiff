@@ -1,4 +1,39 @@
 #!/bin/sh
+# 
+# Does diff confuse you at times, and the diff config
+# settings seems sp00k13? Don't worry.
+# 
+# Usage:
+#	fmtdiff [options] filename/or/directory
+#
+# Options
+#	[ -f | --from ] path:
+#		Sets the basepath to the source file(s)
+#		Defaults to /usr/share if --to is /etc
+#
+#	[ -t | --to ] path
+#		Sets the basepath to the modified file(s)
+#		Defaults to /etc
+#
+#	[ -I | --ignore ] regex-pattern
+#		Sets a regex pattern to lines you don't care about
+#
+#	-i
+#		Ignores casing in files
+#	-b
+#		Ignores whitespace changes (only the amount)
+#	-w
+#		Ignores whitespace differences
+#
+# Dependencies:
+#	- diff
+#	- sed (if using a directory)
+#	- sed (if using a directory)
+# 
+# Example:
+#	fmtdiff -w pipewire
+# 
+
 OLD=$'\033[38;5;124m'
 NEW=$'\033[38;5;40m'
 INFO=$'\033[38;5;62m'
