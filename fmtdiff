@@ -89,7 +89,7 @@ wrapper() {
 			printf "%s\n" "$difference"
 		echo "${INFO}<<< DONE${RESET}"
 	else
-		printf "${INFO}No difference between file:${RESET} {${OLD}${FROM}${RESET},${NEW}${TO}${RESET}}/${INFO}%s${RESET}\n" "${filename}"
+		printf "${INFO}No difference between files:${RESET} {${OLD}${FROM}${RESET},${NEW}${TO}${RESET}}/${INFO}%s${RESET}\n" "${filename}"
 	fi
 
 	echo ""
