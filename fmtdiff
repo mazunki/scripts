@@ -39,7 +39,7 @@ NEW=$'\033[38;5;40m'
 INFO=$'\033[38;5;62m'
 RESET=$'\033[0m'
 
-OPTARGS=$(getopt --options f:t:I:ibw --longoptions from:to:ignore: -- "$@")
+OPTARGS=$(getopt --options f:t:I:ibw --longoptions from:,to:,ignore: -- "$@") || exit 1
 
 OPTS=""
 
@@ -62,6 +62,7 @@ done
 [ -z "$TO" ] && [ "$FROM" = "/usr/share" ] && TO="/etc"
 
 [ -z "$IGNORE" ] && IGNORE="^$"
+IGNORE=$(echo "${IGNORE}" | sed 's:/:\\/:g')
 
 wrapper() {
 	[ -z "$1" ] && return
@@ -73,9 +74,8 @@ wrapper() {
 		--unchanged-line-format="" \
 		--old-line-format="${OLD}%dn${RESET}: %L" \
 		--new-line-format="${NEW}%dn${RESET}: %L" \
-		--from-file "${FROM}/$1" \
-		--ignore-matching-lines "${IGNORE}" \
-		"${TO}/$1"
+		--from-file <( sed "s/$IGNORE//g" "${FROM}/$1" )\
+		<( sed "s/$IGNORE//g" "${TO}/$1" )
 
 	echo "${INFO}<<< DONE${RESET}"
 	echo ""
