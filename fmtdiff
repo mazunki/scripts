@@ -39,7 +39,7 @@ NEW=$'\033[38;5;40m'
 INFO=$'\033[38;5;62m'
 RESET=$'\033[0m'
 
-OPTARGS=$(getopt --options f:t:I:ibw --longoptions from:,to:,ignore: -- "$@") || exit 1
+OPTARGS=$(getopt --options f:t:I:iBbw --longoptions from:,to:,ignore: -- "$@") || exit 1
 
 OPTS=""
 
@@ -50,6 +50,7 @@ while :
 		-t | --to) TO="$2" ; shift 2 ;;
 		-I | --ignore) IGNORE="$2" ; shift 2 ;;
 		-i ) OPTS="${OPTS} --ignore-case" ; shift ;;
+		-B ) OPTS="${OPTS} --ignore-blank-lines" ; shift ;;
 		-b ) OPTS="${OPTS} --ignore-space-change" ; shift ;;
 		-w ) OPTS="${OPTS} --ignore-all-space" ; shift ;;
 		--) shift; break ;;
@@ -66,26 +67,35 @@ IGNORE=$(echo "${IGNORE}" | sed 's:/:\\/:g')
 
 wrapper() {
 	[ -z "$1" ] && return
-	echo "Original file: ${OLD}${FROM}/$1${RESET}"
-	echo "Current file: ${NEW}${TO}/$1${RESET}"
-	echo "${INFO}>>> DIFF${RESET}"
-	diff \
+	difference=$(diff \
 		${OPTS} \
 		--unchanged-line-format="" \
 		--old-line-format="${OLD}%dn${RESET}: %L" \
 		--new-line-format="${NEW}%dn${RESET}: %L" \
 		--from-file <( grep -v "${IGNORE}" "${FROM}/$1" )\
 		<( grep -v "${IGNORE}" "${TO}/$1" )
+	)
 
-	echo "${INFO}<<< DONE${RESET}"
-	echo ""
+	if [ -n "$difference" ]; then
+		echo "${INFO}>>> DIFF${RESET}"
+			printf "%s\n" "$difference"
+		echo "${INFO}<<< DONE${RESET}"
+	else
+		printf "${INFO}%s${RESET}\n" "No difference between files"
+	fi
+
 }
 
 if [ -d "${FROM}/$1" ]; then
 	find "${FROM}/$1" -type f | \
 		while read -r origfilename; do
 			filename=$(echo "${origfilename}" | sed "s:^${FROM}/::")
-			wrapper "$filename"
+			echo "Original file: ${OLD}${FROM}/${filename}${RESET}"
+			echo "Current file: ${NEW}${TO}/${filename}${RESET}"
+			[ -e "${FROM}/$filename" ] || printf "${INFO}File not found${RESET}: ${FROM}%s${RESET}\n" "${TO}/${filename}"
+			[ -e "${TO}/$filename" ] || printf "${INFO}File not found${RESET}: ${NEW}%s${RESET}\n" "${TO}/${filename}"
+			[ -e "${FROM}/$filename" ] && [ -e "${TO}/$filename" ] && wrapper "$filename"
+			echo ""
 		done
 else
 	wrapper "$1"
