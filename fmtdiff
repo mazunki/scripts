@@ -67,6 +67,9 @@ IGNORE=$(echo "${IGNORE}" | sed 's:/:\\/:g')
 
 wrapper() {
 	[ -z "$1" ] && return
+	[ -e "${FROM}/$filename" ] || printf "${INFO}File not found${RESET}: ${FROM}%s${RESET}\n" "${TO}/${filename}"
+	[ -e "${TO}/$filename" ] || printf "${INFO}File not found${RESET}: ${NEW}%s${RESET}\n" "${TO}/${filename}"
+
 	difference=$(diff \
 		${OPTS} \
 		--unchanged-line-format="" \
@@ -76,26 +79,26 @@ wrapper() {
 		<( grep -v "${IGNORE}" "${TO}/$1" )
 	)
 
+	ORIGFILE_FMT="${OLD}${FROM}/${filename}${RESET}"
+	CURRFILE_FMT="${NEW}${TO}/${filename}${RESET}"
 	if [ -n "$difference" ]; then
+		echo "Original file: ${ORIGFILE_FMT}"
+		echo "Current file: ${CURRFILE_FMT}"
 		echo "${INFO}>>> DIFF${RESET}"
 			printf "%s\n" "$difference"
 		echo "${INFO}<<< DONE${RESET}"
 	else
-		printf "${INFO}%s${RESET}\n" "No difference between files"
+		printf "${INFO}No difference between file:${RESET} {${OLD}${FROM}${RESET},${NEW}${TO}${RESET}}/${INFO}%s${RESET}\n" "${filename}"
 	fi
 
+	echo ""
 }
 
 if [ -d "${FROM}/$1" ]; then
 	find "${FROM}/$1" -type f | \
 		while read -r origfilename; do
 			filename=$(echo "${origfilename}" | sed "s:^${FROM}/::")
-			echo "Original file: ${OLD}${FROM}/${filename}${RESET}"
-			echo "Current file: ${NEW}${TO}/${filename}${RESET}"
-			[ -e "${FROM}/$filename" ] || printf "${INFO}File not found${RESET}: ${FROM}%s${RESET}\n" "${TO}/${filename}"
-			[ -e "${TO}/$filename" ] || printf "${INFO}File not found${RESET}: ${NEW}%s${RESET}\n" "${TO}/${filename}"
 			[ -e "${FROM}/$filename" ] && [ -e "${TO}/$filename" ] && wrapper "$filename"
-			echo ""
 		done
 else
 	wrapper "$1"
