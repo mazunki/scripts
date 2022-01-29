@@ -36,7 +36,7 @@ else
 fi
 
 awk \
-	'BEGIN {line=0; start=0; found=0; buf=""}
+	'BEGIN {found=0; buf=""}
 	/'"$QUERY"'/ { found=1; }
 	/'"$START"'/ { if (!found) { buf="" }; }
 	{ buf = buf $0 ORS; }
