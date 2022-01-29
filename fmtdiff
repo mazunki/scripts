@@ -4,7 +4,7 @@ NEW=$'\033[38;5;40m'
 INFO=$'\033[38;5;62m'
 RESET=$'\033[0m'
 
-OPTARGS=$(getopt --options f:t:I:ibwr --longoptions from:to:ignore: -- "$@")
+OPTARGS=$(getopt --options f:t:I:ibw --longoptions from:to:ignore: -- "$@")
 
 OPTS=""
 
@@ -17,7 +17,6 @@ while :
 		-i ) OPTS="${OPTS} --ignore-case" ; shift ;;
 		-b ) OPTS="${OPTS} --ignore-space-change" ; shift ;;
 		-w ) OPTS="${OPTS} --ignore-all-space" ; shift ;;
-		-r ) RECURSIVE=1 ; shift ;;
 		--) shift; break ;;
 		*) echo "Wrong option passed: $1" ;;
 	esac
@@ -47,7 +46,7 @@ wrapper() {
 	echo ""
 }
 
-if [ "$RECURSIVE" = "1" ]; then
+if [ -d "${FROM}/$1" ]; then
 	find "${FROM}/$1" -type f | \
 		while read -r origfilename; do
 			filename=$(echo "${origfilename}" | sed "s:^${FROM}/::")
