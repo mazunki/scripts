@@ -30,7 +30,7 @@ done
 [ -z "$IGNORE" ] && IGNORE="^$"
 
 wrapper() {
-	[ -z "$1" ] && break
+	[ -z "$1" ] && return
 	echo "Original file: ${OLD}${FROM}/$1${RESET}"
 	echo "Current file: ${NEW}${TO}/$1${RESET}"
 	echo "${INFO}>>> DIFF${RESET}"
