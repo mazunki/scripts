@@ -1,0 +1,24 @@
+#!/bin/sh
+
+IFS=$'\n'
+
+for mntpoint in $(mount); do
+	search_path=$1
+	mnt_path=$(echo "$mntpoint" | awk '{print $3}')
+	FOUND=0
+	while [ "$FOUND" = 0 ]; do
+		if [ "$search_path" = "$mnt_path" ]; then
+			FOUND=1
+		else
+			search_path=$(dirname "$search_path")
+		fi
+
+		if [ "$search_path" = '/' ] && [ "$mnt_path" != '/' ]; then
+			break
+		fi
+	done
+
+	if [ "$search_path" = "$mnt_path" ]; then
+		printf "Device %s\tat %s\n" "$(echo "$mntpoint" | awk '{ print $1 }')" "$search_path"
+	fi
+done
