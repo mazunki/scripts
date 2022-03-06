@@ -1,0 +1,11 @@
+#!/bin/sh
+column=1
+while getopts "k:" o; do
+	case "${o}" in
+		k)
+			column="${OPTARG}"
+			;;
+	esac
+done
+
+cat -n | tac | sort -uk"$column","$column" | sort -k 1 | awk -F'\t' 'BEGIN { OFS =FS } { $1=""; print $0 }' | sed 's/^\t//'
