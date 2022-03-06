@@ -8,4 +8,4 @@ while getopts "k:" o; do
 	esac
 done
 
-cat -n | tac | sort -uk"$column","$column" | sort -k 1 | awk -F'\t' 'BEGIN { OFS =FS } { $1=""; print $0 }' | sed 's/^\t//'
+cat -n | tac | sort -uk"$column","$column" | sort -k 1 | awk -F'\t' 'BEGIN { OFS = FS } { $1=""; print $0 }' | sed 's/^\t//'
