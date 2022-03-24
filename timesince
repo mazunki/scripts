@@ -1,10 +1,13 @@
 #!/bin/sh
 default_format="%H hours %M minutes %S secs"
 
-startepoch=$(date --date "$1" +"%s")
-interval=$(($(date +"%s") - startepoch))
-days=$(($(date --date "@$((interval - 3600))" +"%j") - 1))
-format=$(echo ${2:-$default_format} | sed "s/%j/$days/")
+seconds_since=$(date --date "$1" +"%s")
+interval=$(($(date +"%s") - seconds_since))
+
+# TODO: answer: why do we need interval in seconds minus one hour?
+days=$(($(date --date "@$((interval - 3600))" +"%j") - 1))  # months are 1-indexed, we don't want that
+format=$(echo ${2:-$default_format} | sed "s/%j/$days/")  # TODO: should fix all of the 1-indexes, maybe in a loop? how many are there?
+
 formatted=$(date --date "@$((interval - 3600))" +"$format")
 
 echo $formatted
