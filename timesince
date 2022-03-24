@@ -1,0 +1,11 @@
+#!/bin/sh
+default_format="%H hours %M minutes %S secs"
+
+startepoch=$(date --date "$1" +"%s")
+interval=$(($(date +"%s") - startepoch))
+days=$(($(date --date "@$((interval - 3600))" +"%j") - 1))
+format=$(echo ${2:-$default_format} | sed "s/%j/$days/")
+formatted=$(date --date "@$((interval - 3600))" +"$format")
+
+echo $formatted
+
