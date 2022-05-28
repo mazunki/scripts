@@ -39,7 +39,7 @@ NEW=$'\033[38;5;40m'
 INFO=$'\033[38;5;62m'
 RESET=$'\033[0m'
 
-OPTARGS=$(getopt --options f:t:I:iBbw --longoptions from:,to:,ignore: -- "$@") || exit 1
+OPTARGS=$(getopt --options f:t:I:iBbwr --longoptions from:,to:,ignore:,raw -- "$@") || exit 1
 
 OPTS=""
 
@@ -53,6 +53,7 @@ while :
 		-B ) OPTS="${OPTS} --ignore-blank-lines" ; shift ;;
 		-b ) OPTS="${OPTS} --ignore-space-change" ; shift ;;
 		-w ) OPTS="${OPTS} --ignore-all-space" ; shift ;;
+		-r | --raw) OLD=''; NEW=''; INFO=''; shift ;;
 		--) shift; break ;;
 		*) echo "Wrong option passed: $1" ;;
 	esac
