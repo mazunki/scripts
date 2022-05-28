@@ -24,6 +24,8 @@
 #		Ignores whitespace changes (only the amount)
 #	-w
 #		Ignores whitespace differences
+#	[ -r | --raw ]
+#		Removes colours from output
 #
 # Dependencies:
 #	- diff
