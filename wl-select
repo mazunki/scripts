@@ -20,8 +20,6 @@
 #	bindsym $mod+Shift+p exec grim -g "$(wl-select)" - | wl-copy
 # 
 
-export SWAYSOCK=${SWAYSOCK:-$(/bin/ls ${XDG_RUNTIME_DIR}/sway-ipc*)}
-
 if [ "$1" = '-w' -o "$1" == '--wofi' ]; then
 	swaymsg -t get_tree | \
 		jq -r 'recurse(.nodes[], .floating_nodes[]) | select(.pid and .visible) | {name} + .rect | "\(.x),\(.y) \(.width)x\(.height) \(.name)"' | \
