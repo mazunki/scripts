@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+PIPEWIRE_WIRE_PATH=${XDG_STATE_HOME:-${HOME:?Could not find home directory}/.local/state}/pipewire/wires.conf 
+mkdir -p "$(dirname "${PIPEWIRE_WIRE_PATH}")"
+
+if [ "$1" = "load" ]; then
+	awk '{print "pw-link",$1,$2}' "${PIPEWIRE_WIRE_PATH}" | tee | sh 2>/dev/null | true
+elif [ "$1" = "save" ]; then
+	rm -f "${PIPEWIRE_WIRE_PATH}"
+	while IFS= read -r line; do
+		source_device=$(echo "$line" | cut -f4 -d'"')
+		source_gate=$(echo "$line" | cut -f6 -d'"')
+		sink_device=$(echo "$line" | cut -f8 -d'"')
+		sink_gate=$(echo "$line" | cut -f10 -d'"')
+		printf "${source_device}:${source_gate}\t${sink_device}:${sink_gate}\n" | tee -a "${PIPEWIRE_WIRE_PATH}"
+	done < <(pw-cli dump short link)
+else
+	printf "Usage: pw-default-wires [command]\n\tCommand is either load or save.\n"
+fi
