@@ -2,11 +2,11 @@
 set -e
 
 PIPEWIRE_WIRE_PATH=${XDG_STATE_HOME:-${HOME:?Could not find home directory}/.local/state}/pipewire/wires.conf 
-mkdir -p "$(dirname "${PIPEWIRE_WIRE_PATH}")"
 
 if [ "$1" = "load" ]; then
 	awk '{print "pw-link",$1,$2}' "${PIPEWIRE_WIRE_PATH}" | tee | sh 2>/dev/null | true
 elif [ "$1" = "save" ]; then
+	mkdir -p "$(dirname "${PIPEWIRE_WIRE_PATH}")"
 	rm -f "${PIPEWIRE_WIRE_PATH}"
 	while IFS= read -r line; do
 		source_device=$(echo "$line" | cut -f4 -d'"')
