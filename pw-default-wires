@@ -1,13 +1,41 @@
 #!/bin/sh
+# 
+# Tired of reconnecting the same nodes in Helvum over and over again?
+# Don't worry, I got you covered! Save your links to a file, and simply reconnect them.
+#
+#
+# Usage:
+# pw-default-wires save [filename]
+# 	filename = - | string | nothing (defaults to XDG_STATE_HOME/pipewire/wires.conf)
+# 
+# pw-default-wires load [filename]
+# 	filename = - | string | nothing (defaults to XDG_STATE_HOME/pipewire/wires.conf)
+#	
+# pw-default-wires
+# 	displays usage
+# 
+# When using - for the filename, it means you want to pipe it from stdin or stdout.
+# Protip: Use /dev/null or - if you don't want to save anywhere, only display.
+#
+# Dependencies:
+# - awk, to parse stuff
+# - tee, so you can see stuff
+# - pipewire, obviously (pw-cli and pw-link, specifically)
+#
 set -e
 
 PIPEWIRE_WIRE_PATH=${XDG_STATE_HOME:-${HOME:?Could not find home directory}/.local/state}/pipewire/wires.conf 
+[ -n "$2" ] && PIPEWIRE_WIRE_PATH="$2"
 
 if [ "$1" = "load" ]; then
+	[ "$2" = "-" ] && PIPEWIRE_WIRE_PATH="/dev/stdin"
 	awk '{print "pw-link",$1,$2}' "${PIPEWIRE_WIRE_PATH}" | tee | sh 2>/dev/null | true
+
 elif [ "$1" = "save" ]; then
-	mkdir -p "$(dirname "${PIPEWIRE_WIRE_PATH}")"
-	rm -f "${PIPEWIRE_WIRE_PATH}"
+	[ "$2" != "-" ] && mkdir -p "$(dirname "${PIPEWIRE_WIRE_PATH}")"
+	[ -f "${PIPEWIRE_WIRE_PATH}" ] && [ "$2" = "-" ] && rm "${PIPEWIRE_WIRE_PATH}"
+
+	# for each connection
 	while IFS= read -r line; do
 		source_device=$(echo "$line" | cut -f4 -d'"')
 		source_gate=$(echo "$line" | cut -f6 -d'"')
@@ -15,6 +43,7 @@ elif [ "$1" = "save" ]; then
 		sink_gate=$(echo "$line" | cut -f10 -d'"')
 		printf "${source_device}:${source_gate}\t${sink_device}:${sink_gate}\n" | tee -a "${PIPEWIRE_WIRE_PATH}"
 	done < <(pw-cli dump short link)
+
 else
-	printf "Usage: pw-default-wires [command]\n\tCommand is either load or save.\n"
+	printf "Usage: pw-default-wires [command] [filename]\n\tCommand is either load or save.\n\n\tFilename is optional, defaults to XDG_STATE_HOME/pipewire/wires.conf\n\tUse - for pipes. Use /dev/null for dry run.\n"
 fi
