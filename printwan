@@ -1,8 +1,35 @@
 #!/bin/sh
-# i've set up ~/.ssh/config to include access to ssh, and changed the port. avoid default port numbers
-# make sure you actually have ssh access to the router
+# 
+# Do you think it's unnecessary to curl ipinfo.io/ip to get your IP address?
+# That's because you're right!
+#
+# Usage:
+# printwan [ip [port [idfile]]]
+# 	ip = ip of router
+# 	port = port to connect to
+# 	idfile = private key to connect to router
+# 
+# Dependencies:
+# 	- ssh
+# 	- a keypair match on your router
+# 		this means: make sure your router has your public key for your private match
+#
+#	- awk, for parsing
+# 	- sed 
+# 	- printrouter (if not specifiying ip)
+# 	- XDG_CONFIG_HOME/ssh (if not specifiying idfile)
+#		this is not standard. 
+#		consider symlinking either ~/.config/ssh => ~/.ssh
+#			or ~/.ssh => ~/.config/ssh, if you are like me
+#
+# Advice:
+# 	Don't use port 22 for your connections, to avoid spammy logs
+# 
+# 
 
-router_addr=${IP_ROUTER:-$(printrouter)}
+router_addr="${1:-${ROUTER_IP:-$(printrouter)}}"
+router_port="${2:-${ROUTER_PORT:-22}}"
+router_idfile="${3:-${XDG_CONFIG_HOME}/ssh/id_ecdsa}"
 
-ssh $router_addr -p 1122 ip addr show eth0 | tail -n1 | awk '{ print $2 }' | sed "s:\([^/]*\)/\(.*\):\1:"
+ssh -i "${router_idfile}" "${router_addr}" -p "${router_port}" ip addr show eth0 | awk '/inet/ { print $2 }' | cut -d'/' -f1
 
