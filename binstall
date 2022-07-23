@@ -61,23 +61,24 @@ git_installer() {
 		printf "%sChecking for upstream updates...\n" "${INFO}"
 		git fetch --quiet
 
+		# just fail immediately if any of the tracked files are dirty
 		if [ ! "$(git status --untracked-files=no --porcelain | wc -l)" -eq 0 ]; then
 			printf "${ERR}You have uncommited changes! Halting.\n"
 			exit 1
 		fi
 
+		# allow untracked files locally
 		if [ ! "$(git status --untracked-files=all --porcelain | wc -l)" -eq 0 ]; then
 			printf "%sYou have new files in the directory!\n" "${WARN}"
 		fi
 
-		if git diff-index --quiet HEAD@{upstream} --; then
+		# if we are not up-to-date per upstream, pull changes into local
+		if ! git diff-index --quiet HEAD@{upstream} --; then
 			printf "%sUpdating the source files on your system...\n" "${INFO}"
 			git pull --quiet
 			printf "%sUpdated the source files\n" "${HAPPY}"
-		else
-			printf "%sYou have unpushed changes! Halting.\n" "${ERR}"
-			exit 2
 		fi
+
 	else
 		git clone --quiet "${URL}" "${REPO_TARGET}"
 		printf "%sCompleted download of source files...\n" "${INFO}"
