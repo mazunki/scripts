@@ -40,66 +40,68 @@ colours
 
 
 git_installer() {
-	printf "${INFO}Attempting a git install...\n"
+	printf "%sAttempting a git install...\n" "${INFO}"
 	REPO_TARGET="${REPOS_HOME}/${PROJECT_NAME}${REPO_EXTENSION}"
 	if [ ! -e "${REPOS_HOME}" ]; then
 		mkdir -p "${REPOS_HOME}"
-		printf "${INFO}Created ${REPOS_HOME}/"
+		printf "%sCreated ${REPOS_HOME}/" "${INFO}"
 	fi
 	if [ ! -e "${XDG_BIN_HOME}" ]; then
 		mkdir -p "${XDG_BIN_HOME}"
-		printf "${INFO}Created ${XDG_BIN_HOME}/"
+		printf "%sCreated ${XDG_BIN_HOME}/" "${INFO}"
 	fi
 	if grep -q -E "^\S+/\S+$" <<< "${URL}"; then
 		URL="${DEFAULT_PROTOCOL}${DEFAULT_GIT}/${URL}"
-		printf "${INFO}Assuming ${URL}\n"
+		printf "%sAssuming ${URL}\n" "${INFO}"
 	fi
 		
 	if [ -e "${REPO_TARGET}" ]; then
 		printf "${WARN}Already found ${REPO_TARGET} on your system! Using it.\n"
 		pushd "${REPO_TARGET}" >/dev/null
-		printf "${INFO}Checking for upstream updates...\n"
-		if git update-index --refresh >/dev/null; then
-			git fetch --quiet
-		else
+		printf "%sChecking for upstream updates...\n" "${INFO}"
+		git fetch --quiet
+
+		if [ ! "$(git status --untracked-files=no --porcelain | wc -l)" -eq 0 ]; then
 			printf "${ERR}You have uncommited changes! Halting.\n"
 			exit 1
 		fi
 
-		# git update-index checks to see if merges or updates are necessary by using stat()
-		# lists differences of upstream's head (it's not the remote's name)
+		if [ ! "$(git status --untracked-files=all --porcelain | wc -l)" -eq 0 ]; then
+			printf "%sYou have new files in the directory!\n" "${WARN}"
+		fi
+
 		if git diff-index --quiet HEAD@{upstream} --; then
-			printf "${INFO}Updating the source files on your system...\n"
+			printf "%sUpdating the source files on your system...\n" "${INFO}"
 			git pull --quiet
-			printf "${HAPPY}Updated the source files\n"
+			printf "%sUpdated the source files\n" "${HAPPY}"
 		else
-			printf "${ERR}You have unpushed changes! Halting.\n"
+			printf "%sYou have unpushed changes! Halting.\n" "${ERR}"
 			exit 2
 		fi
 	else
 		git clone --quiet "${URL}" "${REPO_TARGET}"
-		printf "${INFO}Completed download of source files...\n"
+		printf "%sCompleted download of source files...\n" "${INFO}"
 		pushd "${REPO_TARGET}" >/dev/null
 	fi
 
 	if test -e "Makefile"; then
 		if [ ! -e "${LOG_PATH}" ]; then
 			mkdir -p "${LOG_PATH}"
-			printf "${INFO}Created ${REPO_TARGET}/${LOG_PATH}...\n"
+			printf "%sCreated ${REPO_TARGET}/${LOG_PATH}...\n" "${INFO}"
 		fi
 		logfile="$(mktemp -p "${LOG_PATH}" "${PROJECT_NAME}_makelogs.XXXXX.log")"
 		if make -k 2>&1 > "${logfile}"; then
-			printf "${HAPPY}Completed building the executable(s)!\n"
-			printf "${INFO}Logs of make are in ${INLINECODE}${REPO_TARGET}/${logfile}${NORMAL}\n"
+			printf "%sCompleted building the executable(s)!\n" "${HAPPY}"
+			printf "%sLogs of make are in ${INLINECODE}${REPO_TARGET}/${logfile}${NORMAL}\n" "${INFO}"
 		else
-			printf "${ERR}Repository couldn't make the executables...\n"
-			printf "${WARN}Check the logs, or send them to someone tech-savvy!\n"
-			printf "${WARN}Run the following to upload the file, and then just send the URL to your best friend!\n"
-			printf "${CODE}cat ${REPO_TARGET}/${logfile} | ${UPLOAD_CMD} ix.io ${NORMAL}\n"
+			printf "%sRepository couldn't make the executables...\n" "${ERR}"
+			printf "%sCheck the logs, or send them to someone tech-savvy!\n" "${WARN}"
+			printf "%sRun the following to upload the file, and then just send the URL to your best friend!\n" "${WARN}"
+			printf "%scat ${REPO_TARGET}/${logfile} | ${UPLOAD_CMD} ix.io ${NORMAL}\n" "${CODE}"
 			exit 3
 		fi
 	else
-		printf "${ERR}Repository doesn't have a makefile... request one!\n"
+		printf "%sRepository doesn't have a makefile... request one!\n" "${ERR}"
 		exit 4
 	fi
 
@@ -108,19 +110,19 @@ git_installer() {
 	elif [ -d "./build" ]; then
 		bin_location="./build"
 	else
-		printf "${ERR}Could not find the directory for the binary\n"
-		printf "${WARN}Maybe the makefile doesn't use ./bin/ or ./build?\n"
-		printf "${INFO}If that's the case please let me know, and I'll consider updating this program\n"
+		printf "%sCould not find the directory for the binary\n" "${ERR}"
+		printf "%sMaybe the makefile doesn't use ./bin/ or ./build?\n" "${WARN}"
+		printf "%sIf that's the case please let me know, and I'll consider updating this program\n" "${INFO}"
 		exit 4
 	fi
-	printf "${INFO}Found a common location for binaries to be in...\n"
+	printf "%sFound a common location for binaries to be in...\n" "${INFO}"
 
 	for file in "${bin_location}"/*; do
 		if test -x "${file}"; then
 			if test -n "${binfile}"; then
-				printf "${ERR}Found multiple executables. Halting.\n"
-				printf "${WARN}Look into the ${bin_location} directory to see which one is the one you want\n"
-				printf "${WARN}Then run the following:\n"
+				printf "%sFound multiple executables. Halting.\n" "${ERR}"
+				printf "%sLook into the ${bin_location} directory to see which one is the one you want\n" "${WARN}"
+				printf "%sThen run the following:\n" "${WARN}"
 				printf "${CODE}install -T ${bin_location}/the_file ${XDG_BIN_HOME}/${PROJECT_NAME}${NORMAL}\n"
 				exit 5
 			fi
@@ -129,10 +131,10 @@ git_installer() {
 	done
 	printf "${INFO}Assuming the binary to be installed is ${binfile}\n"
 	if [ -z "${binfile}" ]; then
-		printf "${ERR}Could not find an executable in ${bin_location}\n"
-		printf "${WARN}Maybe you need to run ${CODE}chmod u+x ${bin_location}/the_file${NORMAL}\n"
-		printf "${WARN}After that, run this:\n"
-		printf "${CODE}install -T ${bin_location}/the_file ${XDG_BIN_HOME}/${PROJECT_NAME}${NORMAL}\n"
+		printf "%sCould not find an executable in ${bin_location}\n" "${ERR}"
+		printf "%sMaybe you need to run ${CODE}chmod u+x ${bin_location}/the_file${NORMAL}\n" "${WARN}"
+		printf "%sAfter that, run this:\n" "${WARN}"
+		printf "%sinstall -T ${bin_location}/the_file ${XDG_BIN_HOME}/${PROJECT_NAME}${NORMAL}\n" "${CODE}"
 
 		popd >/dev/null
 		exit 6
@@ -142,7 +144,7 @@ git_installer() {
 			install -T "${binfile}" "${XDG_BIN_HOME}/${PROJECT_NAME}"
 		else
 			if [ -e "${XDG_BIN_HOME}/${PROJECT_NAME}" ]; then
-				printf "${ERR}There is already something at ${XDG_BIN_HOME}/${PROJECT_NAME}. Halting\n"
+				printf "%sThere is already something at ${XDG_BIN_HOME}/${PROJECT_NAME}. Halting\n" "${ERR}"
 				exit 7
 			fi
 			ln -sT "${REPO_TARGET}/${binfile}" "${XDG_BIN_HOME}/${PROJECT_NAME}"
@@ -157,13 +159,21 @@ http_installer() {
 		mkdir -p "${XDG_BIN_HOME}"
 		printf "${INFO}Created ${XDG_BIN_HOME}\n"
 	fi
-	printf "${INFO}Downloading binary...\n"
-	curl -L "$1" -o "${XDG_BIN_HOME}/${PROJECT_NAME}"
+	printf "%sAttempting to install binary...\n" "${INFO}"
+	if [ -e "${XDG_BIN_HOME}/${PROJECT_NAME}" ]; then
+		printf "%s${XDG_BIN_HOME}/${PROJECT_NAME} already exists\n" "${ERR}"
+		exit 8
+	fi
 
-	printf "${INFO}Making the binary executable...\n"
+	if ! curl -L -s "${URL}" -o "${XDG_BIN_HOME}/${PROJECT_NAME}"; then
+		printf "%sFailed to download fail. Is the link valid? Do you have internet?\n" "${ERR}"
+		exit 9
+	fi
+
+	printf "%sMaking the binary executable...\n" "${INFO}"
 	chmod u+x "${XDG_BIN_HOME}/${PROJECT_NAME}"
 
-	printf "${HAPPY}Completed installation of ${PROJECT_NAME}!\n"
+	printf "%sCompleted installation of ${PROJECT_NAME}!\n" "${HAPPY}"
 }
 
 
@@ -171,7 +181,7 @@ http_installer() {
 #   git@... or github.com... or gitlab.com... or git://...
 #   github.com/whatever/else... or www.github.com... or https://github.com...
 #   whatever/else
-if grep -q -E "^git|${DEFAULT_GIT}|^\S+/\S+$" <<< "${URL}"; then
+if grep -q -E "^git|${DEFAULT_GIT}|^\w+/\w+$" <<< "${URL}"; then
 	git_installer
 else 
 	http_installer
