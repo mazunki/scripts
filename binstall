@@ -75,8 +75,11 @@ git_installer() {
 		# if we are not up-to-date per upstream, pull changes into local
 		if ! git diff-index --quiet HEAD@{upstream} --; then
 			printf "%sUpdating the source files on your system...\n" "${INFO}"
-			git pull --quiet
-			printf "%sUpdated the source files\n" "${HAPPY}"
+			if git pull --ff-only --quiet; then
+				printf "%sUpdated the source files\n" "${HAPPY}"
+			else
+				printf "%sFailed to fast-forward to upstream version\n" "${ERR}"
+			fi
 		fi
 
 	else
