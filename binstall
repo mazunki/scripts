@@ -50,9 +50,15 @@ git_installer() {
 		mkdir -p "${XDG_BIN_HOME}"
 		printf "%sCreated ${XDG_BIN_HOME}/" "${INFO}"
 	fi
-	if grep -q -E "^\S+/\S+$" <<< "${URL}"; then
+
+	if grep -q -E "^\w+/\w+$" <<< "${URL}"; then
 		URL="${DEFAULT_PROTOCOL}${DEFAULT_GIT}/${URL}"
 		printf "%sAssuming ${URL}\n" "${INFO}"
+	elif grep -q -E "^git" <<< "${URL}"; then
+		URL="${URL}"
+		printf "%sAssuming ${URL}\n" "${INFO}"
+	else
+		:
 	fi
 		
 	if [ -e "${REPO_TARGET}" ]; then
@@ -83,7 +89,7 @@ git_installer() {
 		fi
 
 	else
-		git clone --quiet "${URL}" "${REPO_TARGET}"
+		git clone "${URL}" "${REPO_TARGET}"
 		printf "%sCompleted download of source files...\n" "${INFO}"
 		pushd "${REPO_TARGET}" >/dev/null
 	fi
@@ -100,7 +106,7 @@ git_installer() {
 		else
 			printf "%sRepository couldn't make the executables...\n" "${ERR}"
 			printf "%sCheck the logs, or send them to someone tech-savvy!\n" "${WARN}"
-			printf "%sRun the following to upload the file, and then just send the URL to your best friend!\n" "${WARN}"
+			printf "%sRun the following to upload the file, and then just send the ^URL to your best friend!\n" "${WARN}"
 			printf "%scat ${REPO_TARGET}/${logfile} | ${UPLOAD_CMD} ix.io ${NORMAL}\n" "${CODE}"
 			exit 3
 		fi
@@ -185,7 +191,7 @@ http_installer() {
 #   git@... or github.com... or gitlab.com... or git://...
 #   github.com/whatever/else... or www.github.com... or https://github.com...
 #   whatever/else
-if grep -q -E "^git|${DEFAULT_GIT}|^\w+/\w+$" <<< "${URL}"; then
+if grep -q -E "^git|${DEFAULT_GIT}|^\w+/[\w-]+$" <<< "${URL}"; then
 	git_installer
 else 
 	http_installer
