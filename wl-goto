@@ -1,0 +1,10 @@
+#!/bin/sh
+window="$(swaymsg -t get_tree -r |
+	jq -r 'recurse(.nodes[]) | select(.type != "workspace" and .type != "output") | .name' | \
+	wofi --dmenu --insensitive )" 
+
+swaymsg -t get_tree -r | jq \
+	--arg window "${window:?You did not select any window}" 
+	'recurse(.nodes[]) | select(.name == $window) | .id' | \
+		xargs -I{} swaymsg "[con_id={}]" focus
+
