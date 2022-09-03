@@ -1,0 +1,27 @@
+#!/bin/execlineb
+importas -i SRV 1  # -i: required
+envfile -I /etc/s6/config/${SRV}.conf  # -I: lazy loading, aka don't fail
+importas -uD "/var/log" LOGHOME LOGHOME
+
+foreground {  # create /var/log if it didn't already exist
+	install -m 755 -d -o root -g root "${LOGHOME}"
+}
+backtick -E LD {  # -E: autoimport, aka substitute cmdline instead of export
+	ifelse { test -w ${LOGHOME} } {  # in case we failed to create ${LOGHOME}, fall back to /run/log
+		echo ${LOGHOME}
+	} echo /run/log
+}
+foreground {
+	install -d -o s6log -g s6log ${LD}/${SRV}  # create a logdir for this service
+}
+multisubstitute  # -D: default value
+{
+	# n3 = number of files in LOGDIR
+	# s2000000 = bytes in ./current
+	# T = iso8601 timestamp
+	importas -sCuD "n3 s2000000 T" FORMAT DIRECTIVES
+}
+# -d3 = readiness fd 3
+# -b blocking mode
+#
+s6-setuidgid s6log exec -c s6-log -d3 -b -- ${FORMAT} ${LD}/${SRV}

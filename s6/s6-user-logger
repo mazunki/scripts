@@ -1,0 +1,35 @@
+#!/bin/execlineb
+backtick -E USER { id -un }
+backtick -E HOME { homeof $USER }
+backtick -E LOGDIR { echo ${HOME}/.local/logs }
+
+importas -i SRV 1  # -i: required
+envfile -I /etc/s6/config/${USER}.conf  # -I: lazy loading, aka don't fail
+
+foreground {
+	install -m 755 -d -o ${USER} -g ${USER} ${LOGDIR}
+}
+backtick -E LD {  # -E: autoimport, aka substitute cmdline instead of export
+	ifelse { test -w ${LOGDIR} } {  # in case we failed to create ${LOGHOME}, fall back to /run/log
+		echo ${LOGDIR}/s6
+	} echo /run/${USER}/log
+}
+foreground {
+	install -d -o ${USER} -g s6log -m 0775 ${LD}/${SRV}  # create a logdir for this service
+}
+multisubstitute  # -D: default value
+{
+	# n3 = number of files in LOGDIR
+	# s2000000 = bytes in ./current
+	# T = iso8601 timestamp
+	importas -sCuD "n3 s2000000 T" FORMAT DIRECTIVES
+}
+# -d3 = readiness fd 3
+# -b blocking mode
+#
+# s6log:s6log
+# s6-setuidgid s6log exec -c s6-log -d3 -b -- ${FORMAT} ${LD}/${SRV}
+# 
+# user:usergrp
+exec -c s6-log -d3 -b -- ${FORMAT} ${LD}/${SRV}
+

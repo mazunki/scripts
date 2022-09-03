@@ -1,0 +1,85 @@
+#!/bin/sh
+# 
+# script to automatically setup and recompile the s6-init
+#
+
+# options
+S6_SERVICE_HOME="/usr/src/s6/categories"
+S6_COMPILE_HOME="/var/lib/s6/compiled"
+S6_BUNDLE_HOME="/etc/s6/bundles"
+S6_ACTIVE_COMPILED="/var/lib/s6/active_db"
+
+S6_LINUX_INIT="/var/lib/s6/s6-linux-init"
+RESCUE_SHELL_CMD="/sbin/agetty tty12 38400 linux"
+TIMESTAMP="$(date +'%F_%T')"
+
+# prepare
+mkdir -p "${S6_SERVICE_HOME:?}" "${S6_COMPILE_HOME:?}" "${S6_BUNDLE_HOME:?}"
+
+DEST="${S6_COMPILE_HOME:?}/${TIMESTAMP:?}" 
+printf 'Compiling into %s with targets from %s, and %s\n' "$DEST" "${S6_SERVICE_HOME:?}" "${S6_BUNDLE_HOME:?}"
+s6-rc-compile -- "${DEST}" \
+	"${S6_SERVICE_HOME}"/* \
+	"${S6_BUNDLE_HOME}" || { err=$?; printf 'Failed to compile\n'; exit ${err}; }
+
+hint_update_s6_db() {
+	printf 'If you want to update to the new init immediately, run the following:\n'
+	printf '\ts6-rc-update -- %s; \\ \n\tln -sfT -- %s %s\n' "${DEST:?}" "${DEST:?}" "${S6_ACTIVE_COMPILED:?}"
+
+	printf 'You can do this automagically with dbupdate as arg $1\n'
+}
+
+update_s6_database() {
+	printf 'Refreshing symlink to newly created database\n'
+	ln -sfT -- "${DEST:?}" "${S6_ACTIVE_COMPILED:?}"
+	s6-rc-update -- "${DEST:?}" 2>/dev/null || printf 'Did not find a running database. Skipping\n'
+}
+
+[ -e "${S6_ACTIVE_COMPILED:?}" ] && [ ! "$1" = "dbupdate" ] && hint_update_s6_db || update_s6_database
+
+hint_s6_linux_init() {
+	printf 'To get s6 to work as PID=1, some changes are required in %s\n' "${S6_LINUX_INIT:?}/current/scripts/"
+	printf '\trc.init: uncomment s6-rc-init /run/service\n'
+	printf '\t\tAlso make sure s6-rc-init gets the corresponding -c databasedir: %s\n' "${S6_ACTIVE_COMPILED}"
+	printf '\t\tWill copy the compiled services into /run/service\n'
+	printf '\trc.shutdown: uncomment s6-rc -v2 -bDa change\n'
+	printf '\t\tBrings down all services\n'
+	printf '\trunlevel: uncomment s6-rc -v2 -up change "${1:-default}"\n'
+	printf '\t\tBrings up all services up to the given runlevel (args are from kernel cmdline)\n'
+	printf '\n'
+	
+	printf 'You can also run this script with enable as arg $1 to do this automatically\n'
+}
+
+create_s6_linux_init() {
+	printf 'Setting up s6-linux-init\n'
+	s6-linux-init-maker \
+		-G "${RESCUE_SHELL_CMD:?}" \
+		-1 \
+		-p "/usr/sbin:/usr/bin:/sbin:/bin" \
+		-f "${S6_LINUX_INIT:?}/skel" \
+		-c "${S6_LINUX_INIT:?}/current" \
+		-t 2 \
+		"${PWD:?}/tmp" && \
+	mv -fT -- "${PWD}/tmp" "${S6_LINUX_INIT:?}/current"  || { err=$?; printf 'Failed to create s6-linux-init\n'; exit $?; }
+
+	printf 'Yay! We created %s succesfully\n' "${S6_LINUX_INIT:?}/current" 
+	
+	[ "$1" = "enable" ] || hint_s6_linux_init
+}
+
+enable_suggestions_s6() {
+	printf 'Setting up scripts targeted for s6 at PID=1\n'
+	script_dir="${S6_LINUX_INIT}/current/scripts"
+	sed -i 's|[[:space:]]*#[[:space:]]*\(s6-rc-init\) \(/run/service\)|\1 -c '"${S6_ACTIVE_COMPILED}"' \2|' "${script_dir}"/rc.init
+	sed -i 's|[[:space:]]*#[[:space:]]*exec /etc/s6-linux-init/current/scripts/runlevel|exec '${script_dir}'/runlevel|' "${script_dir}"/rc.init
+	sed -i 's/[[:space:]]*#[[:space:]]*\(exec s6-rc -v2 -bDa change\)/\1/' "${script_dir}"/rc.shutdown
+	sed -i 's/[[:space:]]*#[[:space:]]*\(exec s6-rc -v2 -up change .*\)/\1/' "${script_dir}"/runlevel
+
+	printf 'Good luck! :)\n'
+}
+
+[ -e "${S6_LINUX_INIT:?}/current" ] || create_s6_linux_init "$@"
+[ "$1" = "enable" ] && enable_suggestions_s6 "$@"
+[ "$1" = "hint" ] && hint_s6_linux_init "$@"
+

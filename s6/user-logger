@@ -1,0 +1,15 @@
+#!/bin/execlineb
+backtick -E USER { id -un }
+backtick HOME { homeof $USER }
+multisubstitute
+{
+	importas -i SRV 1
+	importas -i H HOME
+}
+export LOGDIR ${H}/.local/logs/s6
+multisubstitute
+{
+	importas -sCuD "n3 s2000000 T" DIRECTIVES DIRECTIVES
+	importas -ui LD LOGDIR
+}
+exec -c s6-log -d3 -b -- ${DIRECTIVES} ${LD}/${SRV}
