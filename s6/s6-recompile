@@ -1,0 +1,16 @@
+#!/bin/sh
+NAME=$(date +%F-%H_%M-%S)
+
+mkdir -p ~/.local/var/lib/s6/compiled/
+echo ">> compiling"
+s6-rc-compile ~/.local/var/lib/s6/compiled/"${NAME}" ~/.local/src/s6/* || exit 1
+
+echo ">> unlinking old compiled"
+[ -L "~/.local/var/lib/s6/active_db" ] && { unlink ~/.local/var/lib/s6/active_db || exit 2; } || true
+
+echo ">> linking new compiled"
+ln -s ~/.local/var/lib/s6/compiled/"${NAME}" ~/.local/var/lib/s6/active_db || exit 3
+
+# echo ">> updating link"
+# s6-rc-update -l /tmp/mazunki.run.d/s6/link ~/.local/s6/"${NAME}" || echo "You had no running svscan, it seems. Remember to recompile when svscan is already up and running."
+
