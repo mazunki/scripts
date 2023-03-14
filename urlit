@@ -1,20 +1,61 @@
 #!/bin/sh
-baseurl='ix.io'
-user="mazunki"
-password="verysecurepassword"
-creds="-u $user:$password"
+set -e
+baseurl='0x0.st'
 
-while getopts "l:" o; do
+usage() {
+	printf "Usage:\n"
+	printf "\turlit [-l <extension>] [-v] <file>...\n"
+	printf "\n"
+	printf "If multiple files or a directory is given, a tarball will be created\n"
+	printf "Automatically copies it to wl-copy if this is possible. "
+	printf "Falls back to xclip, if possible\n"
+}
+
+while getopts ":l:v" o; do
 	case "${o}" in
 		l)
-			lang="-F ext:1=$OPTARG"
+			extension="$OPTARG"
 			;;
+		v)
+			curl_verbose=1
+			;;
+		*)
+			usage
+			exit
 	esac
 done
-#shift $((OPTIND-1))
-echo "lang: '$lang'"
-set -e
-pasteurl=$(curl -Ss ${creds} ${lang} -F 'f:1=<-' "${baseurl}")
+shift $((OPTIND-1))  # counts how much getopts consumed
 
-echo "$pasteurl/"
-wl-copy "${pasteurl}/"
+if [ $# = 0 ]; then
+	filepath='@-'
+	filename='stdin'
+elif [ $# -gt 1 ] || [ -d "${1}" ]; then
+	tmpfile="$(mktemp -p "${XDG_RUNTIME_DIR:-/tmp}" "urlit-XXXXXX.tar")"
+
+	tar cf "${tmpfile}" "$@" 1>&-
+	filepath="${tmpfile}"
+	filename="$(basename "${tmpfile}")"
+else
+	filepath="${1}"
+	filename="$(basename ${filepath})${extension:+.${extension}}"
+fi
+
+[ -f "${filepath}" ] || { printf "File not found\n"; exit 3; }
+
+response="$(curl -s ${curl_verbose:+-v} \
+	-F "file=@${filepath}" \
+	-F "filename=${filename}" \
+	"${baseurl}" || exit 4)"
+
+[ -f "${tmpfile}" ] && rm "${tmpfile}"
+
+printf "%s\n" "${response}"
+
+if command -v wl-copy 1>&-; then
+	wl-copy "${response}"
+elif command -v xclip 1>&-; then
+	printf "${response}" | xclip -sel clip
+else
+	:
+fi
+
